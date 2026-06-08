@@ -10,6 +10,7 @@ Created on Thu Apr 22 11:59:19 2021
 # buffer on every redraw -> unbounded memory growth (the 45 GB leak).
 import matplotlib
 matplotlib.use('Agg')
+from object_detection import ObjectDetector
 
 # You can use this library for oberserving keyboard presses
 import keyboard # pip install keyboard
@@ -54,6 +55,10 @@ keyboard.is_pressed = lambda hotkey: hotkey.lower() in _pressed_keys
 def custom_processing(img_source_generator):
     # use this figure to plot your histogram (created ONCE, outside the loop)
     fig, ax, background, r_plot, g_plot, b_plot = initialize_hist_figure()
+    
+    #Creating the detector object from our object_detection class.
+    detector = ObjectDetector(confidence=0.5)
+
 
     # Equalization toggle + a small debounce counter so a single key tap
     #doesn't flip the state on every frame (high fps => key held many frames).
@@ -74,8 +79,12 @@ def custom_processing(img_source_generator):
         if apply_equalization:
             sequence = equalize_image(sequence)
 
+        sequence, object_count = detector.detect_objects(sequence)
+
         # per-channel statistics on the clean image (before overlays)
         display_text_arr = image_stats(sequence)
+
+        display_text_arr.append(f"Objects detected: {object_count}")
         display_text_arr.append('EQ ON' if apply_equalization else 'EQ OFF')
             
 
