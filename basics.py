@@ -147,7 +147,4 @@ def sobel_edges(np_img):
     magnitude = np.clip(magnitude, 0, 255).astype(np.uint8)
     return cv2.cvtColor(magnitude, cv2.COLOR_GRAY2RGB)
     
-    
-    
-
 ####
