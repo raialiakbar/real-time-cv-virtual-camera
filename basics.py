@@ -94,4 +94,60 @@ def equalize_image(np_img):
     equalized = [cv2.equalizeHist(ch) for ch in channels]
     return cv2.merge(equalized)
 
+def linear_transform(np_img, a =1.3, b=25):
+    '''
+    This is a linear brightness/contrast transformation, using the formula:
+    output = a * input + b
+    putting an alpha value above 1 increases contrast, where a beta of more
+    than 0 increases brightness
+    '''
+    transformed = a * np_img.astype(np.float32) + b
+    transformed = np.clip(transformed, 0, 255)
+    return transformed.astype(np.uint8)
+    
+def entropy_per_channel(np_img):
+    '''
+    This function computes the entropy separately for each of the RGB channels
+    Entropy tells us how much information is in the image, with higher values
+    indicating more detail and/or variation
+    '''
+    channel_names = ('R', 'G', 'B')
+    lines = []
+    
+    for c, name in enumerate(channel_names):
+        ch = np_img[:, :, c]
+        
+        counts = np.bincount(ch.ravel(), minlength=256).astype(np.float64)
+        probs = counts / counts.sum()
+        
+        probs = probs[probs > 0]
+        entropy = -np.sum(probs * np.log2(probs))
+        
+        lines.append(f'{name} entropy:{entropy:.2f}')
+        
+    return lines
+
+def gaussian_blur(np_img, kernel_size=9):
+    '''
+    This function applies a Gaussian blur filter
+    '''
+    np_img = np.ascontiguousarray(np_img)
+    return cv2.GaussianBlur(np_img, (kernel_size, kernel_size), 0)
+
+def sobel_edges(np_img):
+    '''
+    This function applies Sobel Edge Detection and returns
+    RGB image so pyvirtualcam still receives 3 channels
+    '''
+    np_img = np.ascontiguousarray(np_img)
+    gray = cv2.cvtColor(np_img, cv2.COLOR_RGB2GRAY)
+    sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+    magnitude = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+    magnitude = np.clip(magnitude, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(magnitude, cv2.COLOR_GRAY2RGB)
+    
+    
+    
+
 ####

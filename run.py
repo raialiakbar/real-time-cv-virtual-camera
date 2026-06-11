@@ -17,7 +17,15 @@ import keyboard # pip install keyboard
 
 from capturing import VirtualCamera
 from overlays import initialize_hist_figure, plot_overlay_to_image, plot_strings_to_image, update_histogram
-from basics import histogram_figure_numba,image_stats, equalize_image
+from basics import (
+    histogram_figure_numba,
+    image_stats,
+    equalize_image,
+    linear_transform,
+    entropy_per_channel,
+    gaussian_blur,
+    sobel_edges
+)
 
 
 # The `keyboard` package doesn't work on macOS (needs root, and its darwin
@@ -63,6 +71,11 @@ def custom_processing(img_source_generator):
     # Equalization toggle + a small debounce counter so a single key tap
     #doesn't flip the state on every frame (high fps => key held many frames).
     apply_equalization = False
+    apply_linear_transform = False
+    show_entropy = False
+    apply_gaussian_blur = False
+    apply_sobel = False
+    apply_object_detection = True
     cooldown = 0
     
     for sequence in img_source_generator:
@@ -71,23 +84,58 @@ def custom_processing(img_source_generator):
         # key handling: press 'h' to toggle histogram equalization
         if cooldown > 0:
             cooldown -= 1
-        if cooldown == 0 and keyboard.is_pressed('h'):
-            apply_equalization = not apply_equalization
-            cooldown = 15  # ignore further presses for ~15 frames (~0.5 s)
+        if cooldown == 0:
+            if keyboard.is_pressed('h'):
+                apply_equalization = not apply_equalization
+                cooldown = 15
+                
+            elif keyboard.is_pressed('l'):
+                apply_linear_transform = not apply_linear_transform
+                cooldown = 15
+            
+            elif keyboard.is_pressed('e'):
+                show_entropy = not show_entropy
+                cooldown = 15
+                
+            elif keyboard.is_pressed('g'):
+                apply_gaussian_blur = not apply_gaussian_blur
+                cooldown = 15
+                
+            elif keyboard.is_pressed('s'):
+                apply_sobel = not apply_sobel
+                cooldown = 15
+                
+            elif keyboard.is_pressed('o'):
+                apply_object_detection = not apply_object_detection
+                cooldown = 15
 
         # optional equalization (runs first, so stats/histogram reflect it)
         if apply_equalization:
             sequence = equalize_image(sequence)
+        if apply_linear_transform:
+            sequence = linear_transform(sequence, a=1.3, b=25)
+        if apply_gaussian_blur:
+            sequence = gaussian_blur(sequence, kernel_size=9)
+        if apply_sobel:
+            sequence = sobel_edges(sequence)
 
-        sequence, object_count = detector.detect_objects(sequence)
+        # Object detection can optionally be toggled as YOLO may slow down the demo
+        object_count = 0
+        if apply_object_detection:
+            sequence, object_count = detector.detect_objects(sequence)
 
-        # per-channel statistics on the clean image (before overlays)
+        # per channel stats after selected processing, before overlays
         display_text_arr = image_stats(sequence)
-
-        display_text_arr.append(f"Objects detected: {object_count}")
-        display_text_arr.append('EQ ON' if apply_equalization else 'EQ OFF')
+        if show_entropy:
+            display_text_arr.extend(entropy_per_channel(sequence))
             
-
+        display_text_arr.append(f"Objects detected: {object_count}")
+        display_text_arr.append('h: Equalization ' + ('ON' if apply_equalization else 'OFF'))
+        display_text_arr.append('l: Linear Transform ' + ('ON' if apply_linear_transform else 'OFF'))
+        display_text_arr.append('e: Show Entropy ' + ('ON' if show_entropy else 'OFF'))
+        display_text_arr.append('g: Gaussian Blur ' + ('ON' if apply_gaussian_blur else 'OFF'))
+        display_text_arr.append('s: Sobel Edges ' + ('ON' if apply_sobel else 'OFF'))
+        display_text_arr.append('o: Object Detection ' + ('ON' if apply_object_detection else 'OFF'))
         ###
         ### Histogram overlay example (without data)
         ###
