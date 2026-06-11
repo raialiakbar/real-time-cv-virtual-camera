@@ -64,6 +64,9 @@ class VirtualCamera:
             ret, frame = cv_vid.read()
             if not ret:
                 raise RuntimeError('Camera image cannot be loaded.')
+            
+            frame = cv2.resize(frame, (self.width, self.height))
+            
             if bgr_to_rgb:
                 frame = frame[...,::-1]
                 
