@@ -117,15 +117,6 @@ o → Object detection ON/OFF
 q → Quit
 ```
 
-## Example Outputs
-
-Add screenshots here:
-
-```markdown
-![Object Detection Example](images/object_detection_example.png)
-![Sobel Filter Example](images/sobel_filter_example.png)
-```
-
 ## Notes
 
 * The YOLO model is used with pre-trained weights because training an object detection model from scratch would require significantly more data and computing power.
